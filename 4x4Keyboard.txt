@@ -1,0 +1,609 @@
+include HT66F50.inc
+
+ds	.section	'data'
+
+PORT		EQU		PA
+PORTC		EQU		PAC
+STACK_A		DB		?
+STACK_PSW	DB		?
+COUNT		DB		?
+COUNT1		DB		?
+COUNT2		DB		?
+COUNT3		DB		?
+COUNT4		DB		?
+COUNT5		DB		?
+COUNT6		DB		?
+KEY			DB		?
+KEY_PORT	EQU		PC
+KEY_PORTC	EQU		PCC
+KEY_PORTPU	EQU		PCPU
+BJT			DB		3	DUP(?)
+DIGIT		DB		3	DUP(?)
+
+cs	.section	at  000H	'code'
+			ORG		00H
+			JMP		MAIN
+			ORG		14H
+			JMP		ISR_STM
+;===================================
+MAIN:
+			CALL	SETUP
+			CALL	RUN
+			JMP		$
+;===================================
+SETUP		PROC
+			CLR		ACERL
+			MOV		A,08H
+			MOV		CP0C,A
+			MOV		CP1C,A
+			CLR		PORTC
+			CLR		PBC
+			MOV		A,00000000B
+			MOV		TM2C0,A
+			MOV		A,11000001B
+			MOV		TM2C1,A
+			MOV		A,HIGH	5000
+			MOV		TM2AH,A
+			MOV		A,LOW	5000
+			MOV		TM2AL,A
+			SET		MF0E
+			SET		T2AE
+			MOV		A,15
+			MOV		DIGIT[2],A
+			MOV		DIGIT[1],A
+			MOV		DIGIT[0],A
+			SET		T2ON
+			SET		EMI
+			RET
+SETUP		ENDP
+;===================================
+RUN			PROC
+WAIT_1ST_PRESS:	CALL	READ_KEY	;第1個,數字
+			MOV		A,16
+			XOR		A,KEY
+			SZ		Z
+			JMP		RUN
+			MOV		A,10
+			XOR		A,KEY
+			SZ		Z
+			JMP		RUN
+			MOV		A,11
+			XOR		A,KEY
+			SZ		Z
+			JMP		RUN
+			MOV		A,12	;按運算鍵無用所以要跳回去重輸入
+			XOR		A,KEY
+			SZ		Z
+			JMP		RUN
+			MOV		A,13
+			XOR		A,KEY
+			SZ		Z
+			JMP		RUN
+			MOV		A,14
+			XOR		A,KEY
+			SZ		Z
+			JMP		RUN
+			MOV		A,15
+			XOR		A,KEY
+			SZ		Z
+			JMP		RUN
+			MOV		A,KEY
+			MOV		DIGIT[2],A
+WAIT_2ND_PRESS:	CALL	READ_KEY	;第2個,運算符
+			MOV		A,16
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_2ND_PRESS
+			MOV		A,0
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_2ND_PRESS
+			MOV		A,1
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_2ND_PRESS
+			MOV		A,2
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_2ND_PRESS
+			MOV		A,3
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_2ND_PRESS
+			MOV		A,4
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_2ND_PRESS
+			MOV		A,5
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_2ND_PRESS
+			MOV		A,6
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_2ND_PRESS
+			MOV		A,7
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_2ND_PRESS
+			MOV		A,8
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_2ND_PRESS	;按數字鍵無用所以要跳回去重輸入
+			MOV		A,9
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_2ND_PRESS
+			MOV		A,10
+			XOR		A,KEY
+			SZ		Z
+			JMP		ADD_EX	;跳去加法
+			MOV		A,11
+			XOR		A,KEY
+			SZ		Z
+			JMP		SUB_EX	;跳去減法
+			MOV		A,12
+			XOR		A,KEY
+			SZ		Z
+			JMP		MUL_EX	;跳去乘法
+			MOV		A,13
+			XOR		A,KEY
+			SZ		Z
+			JMP		DIV_EX	;跳去除法
+			MOV		A,14
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_2ND_PRESS	;等號還用不到
+			MOV		A,15
+			XOR		A,KEY
+			SNZ		Z
+			JMP		$+3
+			MOV		A,15
+			MOV		DIGIT[2],A
+			JMP		WAIT_1ST_PRESS
+ADD_EX:		MOV		A,KEY
+			MOV		DIGIT[1],A
+WAIT_3RD_1_PRESS:	CALL	READ_KEY	;第3個,數字
+			MOV		A,16
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_1_PRESS
+			MOV		A,10
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_1_PRESS
+			MOV		A,11
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_1_PRESS
+			MOV		A,12	;按運算鍵無用所以要跳回去重輸入
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_1_PRESS
+			MOV		A,13
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_1_PRESS
+			MOV		A,14
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_1_PRESS
+			MOV		A,15
+			XOR		A,KEY
+			SNZ		Z
+			JMP		$+4
+			MOV		A,15
+			MOV		DIGIT[1],A
+			JMP		WAIT_2ND_PRESS	
+			MOV		A,KEY
+			MOV		DIGIT[0],A
+			CALL	READ_KEY	;按下等號
+			MOV		A,15
+			XOR		A,KEY
+			SNZ		Z
+			JMP		$+4
+			MOV		A,15
+			MOV		DIGIT[0],A
+			JMP		WAIT_3RD_1_PRESS
+			MOV		A,DIGIT[2]
+			ADD		A,DIGIT[0]
+			MOV		COUNT1,A
+			MOV		A,14
+			SUB		A,KEY
+			SNZ		Z
+			JMP		$-14
+			MOV		A,14
+			MOV		DIGIT[2],A
+			CLR		DIGIT[1]
+			CLR		DIGIT[0]
+			INC		DIGIT[0]
+			MOV		A,DIGIT[0]
+			SUB		A,10
+			SNZ		Z
+			JMP		$+3
+			CLR		DIGIT[0]
+			INC		DIGIT[1]
+			SDZ		COUNT1
+			JMP		$-8
+			SZ		DIGIT[1]
+			JMP		$+3
+			MOV		A,15
+			MOV		DIGIT[1],A
+			CALL	READ_KEY
+			MOV		A,15
+			SUB		A,KEY
+			SNZ		Z
+			JMP		$-4
+			MOV		A,15
+			MOV		DIGIT[2],A	;按下清除要暗掉
+			MOV		DIGIT[1],A
+			MOV		DIGIT[0],A
+			JMP		WAIT_1ST_PRESS
+SUB_EX:		MOV		A,KEY
+			MOV		DIGIT[1],A
+WAIT_3RD_2_PRESS:	CALL	READ_KEY	;第3個,數字
+			MOV		A,16
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_2_PRESS
+			MOV		A,10
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_2_PRESS
+			MOV		A,11
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_2_PRESS
+			MOV		A,12	;按運算鍵無用所以要跳回去重輸入
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_2_PRESS
+			MOV		A,13
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_2_PRESS
+			MOV		A,14
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_2_PRESS
+			MOV		A,15
+			XOR		A,KEY
+			SNZ		Z
+			JMP		$+4
+			MOV		A,15
+			MOV		DIGIT[1],A
+			JMP		WAIT_2ND_PRESS
+			MOV		A,KEY
+			MOV		DIGIT[0],A
+			CALL	READ_KEY	;按下等號
+			MOV		A,15
+			XOR		A,KEY
+			SNZ		Z
+			JMP		$+4
+			MOV		A,15
+			MOV		DIGIT[0],A
+			JMP		WAIT_3RD_2_PRESS
+			MOV		A,14
+			SUB		A,KEY
+			SNZ		Z
+			JMP		$-11
+			CPL		DIGIT[0]
+			INC		DIGIT[0]	;取2補數
+			MOV		A,DIGIT[2]
+			ADD		A,DIGIT[0]
+			MOV		COUNT1,A
+			SNZ		COUNT1.7
+			JMP		$+6
+			CPL		COUNT1
+			INC		COUNT1
+			MOV		A,11
+			MOV		DIGIT[1],A
+			JMP		$+2
+			CLR		DIGIT[1]
+			MOV		A,14
+			MOV		DIGIT[2],A
+			CLR		DIGIT[0]
+			INC		DIGIT[0]
+			SDZ		COUNT1
+			JMP		$-2
+			SZ		DIGIT[1]
+			JMP		$+3
+			MOV		A,15
+			MOV		DIGIT[1],A
+			CALL	READ_KEY
+			MOV		A,15
+			SUB		A,KEY
+			SNZ		Z
+			JMP		$-4
+			MOV		A,15
+			MOV		DIGIT[2],A	;按下清除要暗掉
+			MOV		DIGIT[1],A
+			MOV		DIGIT[0],A
+			JMP		WAIT_1ST_PRESS
+MUL_EX:		MOV		A,KEY
+			MOV		DIGIT[1],A
+WAIT_3RD_3_PRESS:	CALL	READ_KEY	;第3個,數字
+			MOV		A,16
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_3_PRESS
+			MOV		A,10
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_3_PRESS
+			MOV		A,11
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_3_PRESS
+			MOV		A,12	;按運算鍵無用所以要跳回去重輸入
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_3_PRESS
+			MOV		A,13
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_3_PRESS
+			MOV		A,14
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_3_PRESS
+			MOV		A,15
+			XOR		A,KEY
+			SNZ		Z
+			JMP		$+4
+			MOV		A,15
+			MOV		DIGIT[1],A
+			JMP		WAIT_2ND_PRESS
+			MOV		A,KEY
+			MOV		DIGIT[0],A
+			CALL	READ_KEY	;按下等號
+			MOV		A,15
+			XOR		A,KEY
+			SNZ		Z
+			JMP		$+4
+			MOV		A,15
+			MOV		DIGIT[0],A
+			JMP		WAIT_3RD_3_PRESS
+			MOV		A,14
+			SUB		A,KEY
+			SNZ		Z
+			JMP		$-11
+			CLR		DIGIT[1]
+			SZ		DIGIT[2]
+			JMP		$+2
+			JMP		$+3
+			SZ		DIGIT[0]
+			JMP		$+4
+			CLR		DIGIT[2]
+			CLR		DIGIT[0]
+			JMP		$+17
+			MOV		A,DIGIT[0]
+			MOV		COUNT2,A
+			CLR		DIGIT[0]
+			MOV		A,DIGIT[2]
+			MOV		COUNT1,A
+			INC		DIGIT[0]
+			MOV		A,DIGIT[0]
+			SUB		A,10
+			SNZ		Z
+			JMP		$+3
+			CLR		DIGIT[0]
+			INC		DIGIT[1]
+			SDZ		COUNT1
+			JMP		$-8
+			SDZ		COUNT2
+			JMP		$-12
+			MOV		A,14
+			MOV		DIGIT[2],A
+			SZ		DIGIT[1]
+			JMP		$+3
+			MOV		A,15
+			MOV		DIGIT[1],A
+			CALL	READ_KEY
+			MOV		A,15
+			SUB		A,KEY
+			SNZ		Z
+			JMP		$-4
+			MOV		A,15
+			MOV		DIGIT[2],A	;按下清除要暗掉
+			MOV		DIGIT[1],A
+			MOV		DIGIT[0],A
+			JMP		WAIT_1ST_PRESS
+DIV_EX:		MOV		A,KEY
+			MOV		DIGIT[1],A
+WAIT_3RD_4_PRESS:	CALL	READ_KEY	;第3個,數字
+			MOV		A,16
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_4_PRESS
+			MOV		A,10
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_4_PRESS
+			MOV		A,11
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_4_PRESS
+			MOV		A,12	;按運算鍵無用所以要跳回去重輸入
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_4_PRESS
+			MOV		A,13
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_4_PRESS
+			MOV		A,14
+			XOR		A,KEY
+			SZ		Z
+			JMP		WAIT_3RD_4_PRESS
+			MOV		A,15
+			XOR		A,KEY
+			SNZ		Z
+			JMP		$+4
+			MOV		A,15
+			MOV		DIGIT[1],A
+			JMP		WAIT_2ND_PRESS
+			MOV		A,KEY
+			MOV		DIGIT[0],A
+			CALL	READ_KEY	;按下等號
+			MOV		A,15
+			XOR		A,KEY
+			SNZ		Z
+			JMP		$+4
+			MOV		A,15
+			MOV		DIGIT[0],A
+			JMP		WAIT_3RD_4_PRESS
+			MOV		A,14
+			SUB		A,KEY
+			SNZ		Z
+			JMP		$-11
+			SZ		DIGIT[0]
+			JMP		$+6
+			MOV		A,11
+			MOV		DIGIT[2],A
+			MOV		DIGIT[1],A
+			MOV		DIGIT[0],A
+			JMP		$+38
+			CLR		COUNT3
+			CLR		COUNT6
+			CLR		DIGIT[1]
+			MOV		A,DIGIT[2]
+			SUB		A,DIGIT[0]
+			SNZ		C
+			JMP		$+11
+			INC		COUNT3
+			SNZ		Z
+			JMP		$-5
+			MOV		A,14
+			MOV		DIGIT[2],A
+			MOV		A,15
+			MOV		DIGIT[1],A
+			MOV		A,COUNT3
+			MOV		DIGIT[0],A
+			JMP		$+21
+			ADD		A,DIGIT[0]
+			MOV		COUNT4,A
+			MOV		A,10
+			MOV		COUNT5,A
+			MOV		A,0
+			ADD		A,COUNT4
+			SDZ		COUNT5
+			JMP		$-2
+			SUB		A,DIGIT[0]
+			SNZ		C
+			JMP		$+3
+			INC		COUNT6
+			JMP		$-4
+			MOV		A,COUNT3
+			ADD		A,16
+			MOV		DIGIT[1],A
+			MOV		A,COUNT6
+			MOV		DIGIT[0],A
+			MOV		A,14
+			MOV		DIGIT[2],A
+			CALL	READ_KEY
+			MOV		A,15
+			SUB		A,KEY
+			SNZ		Z
+			JMP		$-4
+			MOV		A,15
+			MOV		DIGIT[2],A	;按下清除要暗掉
+			MOV		DIGIT[1],A
+			MOV		DIGIT[0],A
+			JMP		WAIT_1ST_PRESS
+RUN			ENDP
+;===================================
+READ_KEY	PROC
+			MOV		A,11110000B
+			MOV		KEY_PORTC,A
+			MOV		KEY_PORTPU,A
+			SET		KEY_PORT
+			CLR		KEY
+			MOV		A,04
+			MOV		COUNT,A
+			CLR		C
+SCAN_KEY:	RLC		KEY_PORT
+			SET		C
+			SNZ		KEY_PORT.4
+			JMP		END_KEY
+			INC		KEY
+			SNZ		KEY_PORT.5
+			JMP		END_KEY
+			INC		KEY
+			SNZ		KEY_PORT.6
+			JMP		END_KEY
+			INC		KEY
+			SNZ		KEY_PORT.7
+			JMP		END_KEY
+			INC		KEY
+			SDZ		COUNT
+			JMP		SCAN_KEY
+END_KEY:	RET
+READ_KEY	ENDP
+;===================================
+ISR_STM:	MOV		STACK_A,A
+			MOV		A,STATUS
+			MOV		STACK_PSW,A
+			MOV		A,BJT[1]
+			ADDM	A,PCL
+			JMP		$+3
+			JMP		$+10
+			JMP		$+17
+			SET		PB0;個位數
+			CLR		PB1
+			CLR		PB2
+			MOV		A,DIGIT[0]
+			CALL	NUMBER
+			MOV		PORT,A
+			INC		BJT[1]
+			JMP		$+16
+			SET		PB1;十位數
+			CLR		PB0
+			CLR		PB2
+			MOV		A,DIGIT[1]
+			CALL	NUMBER
+			MOV		PORT,A
+			INC		BJT[1]
+			JMP		$+8
+			SET		PB2;百位數
+			CLR		PB0
+			CLR		PB1
+			MOV		A,DIGIT[2]
+			CALL	NUMBER
+			MOV		PORT,A
+			CLR		BJT[1]
+			CLR		T2AF
+			MOV		A,STACK_PSW
+			MOV		STATUS,A
+			MOV		A,STACK_A
+			RETI
+;===================================
+NUMBER		PROC
+			ADDM	A,PCL
+			RET		A,00111111B	;0
+			RET		A,00000110B	;1
+			RET		A,01011011B	;2
+			RET		A,01001111B	;3
+			RET		A,01100110B	;4
+			RET		A,01101101B	;5
+			RET		A,01111101B	;6
+			RET		A,00000111B	;7
+			RET		A,01111111B	;8
+			RET		A,01100111B	;9
+			RET		A,01000110B	;+
+			RET		A,01000000B	;-
+			RET		A,01110110B	;*
+			RET		A,01001001B	;/
+			RET		A,01001000B	;=
+			RET		A,00000000B	;暗掉
+			RET		A,10111111B	;0.
+			RET		A,10000110B	;1.
+			RET		A,11011011B	;2.
+			RET		A,11001111B	;3.
+			RET		A,11100110B	;4.
+			RET		A,11101101B	;5.
+			RET		A,11111101B	;6.
+			RET		A,10000111B	;7.
+			RET		A,11111111B	;8.
+			RET		A,11100111B	;9.
+NUMBER		ENDP
